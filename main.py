@@ -35,8 +35,14 @@ class OrderIn(BaseModel):
 @app.middleware("http")
 async def rate_limiter(request: Request, call_next):
     if request.method == "OPTIONS":
-        return await call_next(request)
-
+        return Response(
+            status_code=204,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+                "Access-Control-Allow-Headers": "*",
+            },
+        )
     client_id = request.headers.get("X-Client-Id", "default")
     now = time.time()
     bucket = client_requests[client_id]
