@@ -52,11 +52,17 @@ async def middleware(request: Request, call_next):
         bucket.popleft()
 
     if len(bucket) >= RATE_LIMIT:
+        retry_after = max(1, int(WINDOW - (now - bucket[0])))
         return Response(
             content='{"detail":"rate limit exceeded"}',
             status_code=429,
             media_type="application/json",
-            headers={"Access-Control-Allow-Origin": "*"},
+            headers={
+                "Retry-After": str(retry_after),
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+                "Access-Control-Allow-Headers": "*",
+            },
         )
 
     bucket.append(now)
@@ -66,7 +72,6 @@ async def middleware(request: Request, call_next):
     response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "*"
     return response
-
 
 @app.get("/")
 def root():
