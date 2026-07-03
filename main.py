@@ -33,7 +33,7 @@ class OrderIn(BaseModel):
 
 
 @app.middleware("http")
-async def rate_limiter(request: Request, call_next):
+async def middleware(request: Request, call_next):
     if request.method == "OPTIONS":
         return Response(
             status_code=204,
@@ -43,6 +43,7 @@ async def rate_limiter(request: Request, call_next):
                 "Access-Control-Allow-Headers": "*",
             },
         )
+
     client_id = request.headers.get("X-Client-Id") or request.client.host
     now = time.time()
     bucket = client_requests[client_id]
@@ -51,16 +52,20 @@ async def rate_limiter(request: Request, call_next):
         bucket.popleft()
 
     if len(bucket) >= RATE_LIMIT:
-        retry_after = max(1, int(WINDOW - (now - bucket[0])))
         return Response(
             content='{"detail":"rate limit exceeded"}',
             status_code=429,
             media_type="application/json",
-            headers={"Retry-After": str(retry_after)},
+            headers={"Access-Control-Allow-Origin": "*"},
         )
 
     bucket.append(now)
-    return await call_next(request)
+
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
 
 
 @app.get("/")
