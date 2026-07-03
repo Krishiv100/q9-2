@@ -43,7 +43,7 @@ async def rate_limiter(request: Request, call_next):
                 "Access-Control-Allow-Headers": "*",
             },
         )
-    client_id = request.headers.get("X-Client-Id", "default")
+    client_id = request.headers.get("X-Client-Id") or request.client.host
     now = time.time()
     bucket = client_requests[client_id]
 
