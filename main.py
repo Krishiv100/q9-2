@@ -3,6 +3,7 @@ from collections import defaultdict, deque
 from fastapi import FastAPI, Header, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from urllib.parse import unquote
 
 T = 42
 RATE_LIMIT = 18
@@ -87,7 +88,9 @@ def decode_cursor(cursor: str | None) -> int:
     if not cursor:
         return 0
     try:
-        return int(base64.urlsafe_b64decode(cursor.encode()).decode())
+        cursor = unquote(cursor)
+        padding = "=" * (-len(cursor) % 4)
+        return int(base64.urlsafe_b64decode((cursor + padding).encode()).decode())
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid cursor")
 
